@@ -5,6 +5,7 @@ import Header from "./components/Header";
 import Home from "./pages/Home";
 import { Routes, Route } from "react-router-dom";
 import Favorites from "./pages/Favorites";
+import AppContext from "./context";
 
 function App() {
   const [items, setItems] = React.useState([]);
@@ -12,6 +13,7 @@ function App() {
   const [favorite, setFavorite] = React.useState([]);
   const [searchValue, setSearchValue] = React.useState("");
   const [cartOpened, setCartOpened] = React.useState(false);
+  const [isLoading, setisLoading] = React.useState(true);
 
   //В mockApi огран кол-во resourse макс 2 поэтому кто будет смотреть мой проект:
 
@@ -97,24 +99,45 @@ function App() {
     //     setItems(res.data);
     //   });
 
-    setItems(arr);
+    async function fetchData() {
+      setisLoading(true);
+      const cartResponce = await axios.get(
+        "https://6648ad064032b1331bec1385.mockapi.io/cart"
+      );
 
-    axios
-      .get("https://6648ad064032b1331bec1385.mockapi.io/cart")
-      .then((res) => {
-        setCartItems(res.data);
-      });
+      const favoritesResponce = await axios.get(
+        "https://6648ad064032b1331bec1385.mockapi.io/favorites"
+      );
 
-    axios
-      .get("https://6648ad064032b1331bec1385.mockapi.io/favorites")
-      .then((res) => {
-        setFavorite(res.data);
-      });
+      setCartItems(cartResponce.data);
+      setFavorite(favoritesResponce.data);
+
+      setTimeout(() => {
+        setisLoading(false);
+        setItems(arr);
+      }, 2000);
+    }
+
+    fetchData();
   }, []);
 
   const onAddToCart = (obj) => {
-    axios.post("https://6648ad064032b1331bec1385.mockapi.io/cart", obj);
-    setCartItems((prev) => [...prev, obj]);
+    console.log(obj);
+    try {
+      if (cartItems.find((item) => Number(item.id) === Number(obj.id))) {
+        axios.delete(
+          `https://6648ad064032b1331bec1385.mockapi.io/cart/${obj.id}`
+        );
+        setCartItems((prev) =>
+          prev.filter((item) => Number(item.id) !== Number(obj.id))
+        );
+      } else {
+        axios.post("https://6648ad064032b1331bec1385.mockapi.io/cart", obj);
+        setCartItems((prev) => [...prev, obj]);
+      }
+    } catch {
+      alert("не удалось длобавить ");
+    }
   };
 
   const onAddToFavorite = async (obj) => {
@@ -149,40 +172,53 @@ function App() {
     setSearchValue("");
   };
 
+  const isItemAdded = (id) => {
+    return cartItems.some((obj) => Number(obj.id) === Number(id));
+  };
+
   return (
-    <div className="wrapper clear">
-      {cartOpened && (
-        <Drawer
-          items={cartItems}
-          onClose={() => setCartOpened(false)}
-          onRemove={onRemoveCart}
-        />
-      )}
+    <AppContext.Provider
+      value={{
+        items,
+        cartItems,
+        favorite,
+        isItemAdded,
+      }}
+    >
+      <div className="wrapper clear">
+        {cartOpened && (
+          <Drawer
+            items={cartItems}
+            onClose={() => setCartOpened(false)}
+            onRemove={onRemoveCart}
+          />
+        )}
 
-      <Header onClickCart={() => setCartOpened(true)} />
+        <Header onClickCart={() => setCartOpened(true)} />
 
-      <Routes>
-        <Route
-          path="/"
-          element={
-            <Home
-              items={items}
-              searchValue={searchValue}
-              onChangeSearchInput={onChangeSearchInput}
-              onAddToFavorite={onAddToFavorite}
-              onAddToCart={onAddToCart}
-              reset={reset}
-            ></Home>
-          }
-        />
-        <Route
-          path="/favorites"
-          element={
-            <Favorites favorite={favorite} onAddToFavorite={onAddToFavorite} />
-          }
-        />
-      </Routes>
-    </div>
+        <Routes>
+          <Route
+            path="/"
+            element={
+              <Home
+                items={items}
+                cartItems={cartItems}
+                searchValue={searchValue}
+                onChangeSearchInput={onChangeSearchInput}
+                onAddToFavorite={onAddToFavorite}
+                onAddToCart={onAddToCart}
+                reset={reset}
+                isLoading={isLoading}
+              ></Home>
+            }
+          />
+          <Route
+            path="/favorites"
+            element={<Favorites onAddToFavorite={onAddToFavorite} />}
+          />
+        </Routes>
+      </div>
+    </AppContext.Provider>
   );
 }
 
