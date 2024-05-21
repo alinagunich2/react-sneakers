@@ -17,11 +17,13 @@ function App() {
 
   //В mockApi огран кол-во resourse макс 2 поэтому кто будет смотреть мой проект:
 
+  let order = [];
+
   let arr = [
     {
       id: 1,
       img: 1,
-      title: "Мужские Кроссовки Nike Blazer Mid Suede",
+      title: "VVVVVVVМужские Кроссовки Nike Blazer Mid Suede",
       price: 12999,
     },
     {
@@ -146,7 +148,7 @@ function App() {
         axios.delete(
           `https://6648ad064032b1331bec1385.mockapi.io/favorites/${obj.id}`
         );
-        // setFavorite((prev) => prev.filter((item) => item.id !== obj.id));
+        setFavorite((prev) => prev.filter((item) => item.id !== obj.id));
       } else {
         const { data } = await axios.post(
           "https://6648ad064032b1331bec1385.mockapi.io/favorites",
@@ -175,6 +177,9 @@ function App() {
   const isItemAdded = (id) => {
     return cartItems.some((obj) => Number(obj.id) === Number(id));
   };
+  // const isFavorite = (id) => {
+  //   return favorite.some((obj) => Number(obj.id) === Number(id));
+  // };
 
   return (
     <AppContext.Provider
@@ -183,6 +188,10 @@ function App() {
         cartItems,
         favorite,
         isItemAdded,
+        setCartOpened,
+        setCartItems,
+        order,
+        // isFavorite,
       }}
     >
       <div className="wrapper clear">

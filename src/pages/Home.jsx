@@ -4,7 +4,7 @@ import AppContext from "../context";
 
 function Home({
   items,
-  cartItems,
+  // cartItems,
   searchValue,
   onChangeSearchInput,
   onAddToFavorite,
@@ -12,7 +12,7 @@ function Home({
   reset,
   isLoading,
 }) {
-  const { isItemAdded } = React.useContext(AppContext);
+  // const { isItemAdded } = React.useContext(AppContext);
 
   const renderItems = () => {
     return (
@@ -31,7 +31,7 @@ function Home({
 
         onFavorire={(obj) => onAddToFavorite(obj)}
         onPlus={(obj) => onAddToCart(obj)}
-        addedCard={isItemAdded(item && item.id)}
+        // addedCard={isItemAdded(item && item.id)}
         isLoading={isLoading}
         {...item}
       />
