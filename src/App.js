@@ -6,6 +6,7 @@ import Home from "./pages/Home";
 import { Routes, Route } from "react-router-dom";
 import Favorites from "./pages/Favorites";
 import AppContext from "./context";
+import Orders from "./pages/Orders";
 
 function App() {
   const [items, setItems] = React.useState([]);
@@ -14,10 +15,12 @@ function App() {
   const [searchValue, setSearchValue] = React.useState("");
   const [cartOpened, setCartOpened] = React.useState(false);
   const [isLoading, setisLoading] = React.useState(true);
+  const [order, setOrder] = React.useState([]);
+  // const [totalPrice, setTotalPrice] = React.useState(
+  //   cartItems.reduce((sum, obj) => obj.price + sum, 0)
+  // );
 
   //В mockApi огран кол-во resourse макс 2 поэтому кто будет смотреть мой проект:
-
-  let order = [];
 
   let arr = [
     {
@@ -103,13 +106,11 @@ function App() {
 
     async function fetchData() {
       setisLoading(true);
-      const cartResponce = await axios.get(
-        "https://6648ad064032b1331bec1385.mockapi.io/cart"
-      );
 
-      const favoritesResponce = await axios.get(
-        "https://6648ad064032b1331bec1385.mockapi.io/favorites"
-      );
+      const [cartResponce, favoritesResponce] = await Promise.all([
+        axios.get("https://6648ad064032b1331bec1385.mockapi.io/cart"),
+        axios.get("https://6648ad064032b1331bec1385.mockapi.io/favorites"),
+      ]);
 
       setCartItems(cartResponce.data);
       setFavorite(favoritesResponce.data);
@@ -123,19 +124,24 @@ function App() {
     fetchData();
   }, []);
 
-  const onAddToCart = (obj) => {
-    console.log(obj);
+  const onAddToCart = async (obj) => {
+    let findItem = cartItems.find(
+      (item) => Number(item.parentId) === Number(obj.id)
+    );
     try {
-      if (cartItems.find((item) => Number(item.id) === Number(obj.id))) {
-        axios.delete(
-          `https://6648ad064032b1331bec1385.mockapi.io/cart/${obj.id}`
+      if (findItem) {
+        await axios.delete(
+          `https://6648ad064032b1331bec1385.mockapi.io/cart/${findItem.id}`
         );
         setCartItems((prev) =>
-          prev.filter((item) => Number(item.id) !== Number(obj.id))
+          prev.filter((item) => Number(item.parentId) !== Number(obj.id))
         );
       } else {
-        axios.post("https://6648ad064032b1331bec1385.mockapi.io/cart", obj);
-        setCartItems((prev) => [...prev, obj]);
+        const { data } = await axios.post(
+          "https://6648ad064032b1331bec1385.mockapi.io/cart",
+          obj
+        );
+        setCartItems((prev) => [...prev, data]);
       }
     } catch {
       alert("не удалось длобавить ");
@@ -162,8 +168,14 @@ function App() {
   };
 
   const onRemoveCart = (id) => {
-    axios.delete(`https://6648ad064032b1331bec1385.mockapi.io/cart/${id}`);
-    setCartItems((prev) => prev.filter((item) => item.id !== id));
+    try {
+      axios.delete(`https://6648ad064032b1331bec1385.mockapi.io/cart/${id}`);
+      setCartItems((prev) =>
+        prev.filter((item) => Number(item.id) !== Number(id))
+      );
+    } catch (error) {
+      alert("Ошибка");
+    }
   };
 
   const onChangeSearchInput = (event) => {
@@ -175,7 +187,7 @@ function App() {
   };
 
   const isItemAdded = (id) => {
-    return cartItems.some((obj) => Number(obj.id) === Number(id));
+    return cartItems.some((obj) => Number(obj.parentId) === Number(id));
   };
   // const isFavorite = (id) => {
   //   return favorite.some((obj) => Number(obj.id) === Number(id));
@@ -191,17 +203,20 @@ function App() {
         setCartOpened,
         setCartItems,
         order,
+        setOrder,
+        onAddToFavorite,
+        onAddToCart,
+
         // isFavorite,
       }}
     >
       <div className="wrapper clear">
-        {cartOpened && (
-          <Drawer
-            items={cartItems}
-            onClose={() => setCartOpened(false)}
-            onRemove={onRemoveCart}
-          />
-        )}
+        <Drawer
+          items={cartItems}
+          onClose={() => setCartOpened(false)}
+          onRemove={onRemoveCart}
+          opened={cartOpened}
+        />
 
         <Header onClickCart={() => setCartOpened(true)} />
 
@@ -224,6 +239,10 @@ function App() {
           <Route
             path="/favorites"
             element={<Favorites onAddToFavorite={onAddToFavorite} />}
+          />
+          <Route
+            path="/orders"
+            element={<Orders onAddToFavorite={onAddToFavorite} />}
           />
         </Routes>
       </div>

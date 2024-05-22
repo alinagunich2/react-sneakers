@@ -1,34 +1,41 @@
 import React from "react";
-import Inform from "./Inform";
-import AppContext from "../context";
+import Inform from "../Inform";
+import AppContext from "../../context";
 import axios from "axios";
+import { useCart } from "../../hooks/useCart";
+import styles from "./Drawer.module.scss";
 
 const delay = () => new Promise((resolve) => setTimeout(resolve, 1000));
 
-function Drawer({ onClose, items = [], onRemove }) {
-  const { setCartItems, order, cartItems } = React.useContext(AppContext);
+function Drawer({ onClose, items = [], onRemove, opened }) {
+  const { cartItems, setCartItems, totalPrice } = useCart();
+  const { order, setOrder } = React.useContext(AppContext);
 
   const [isOr, setIsOr] = React.useState(false);
 
   const onClickOrder = async () => {
     //axios.post('https://6648ad064032b1331bec1385.mockapi.io/orders/',obj)
 
-    order.push(cartItems);
-    setIsOr(true);
-    setCartItems([]);
+    try {
+      setOrder((prev) => [...prev, cartItems]);
+      setIsOr(true);
+      setCartItems([]);
 
-    for (let i = 0; i < cartItems.length; i++) {
-      const item = cartItems[i];
-      await axios.delete(
-        "https://6648ad064032b1331bec1385.mockapi.io/cart" + item.id
-      );
-      await delay();
+      for (let i = 0; i < cartItems.length; i++) {
+        const item = cartItems[i];
+        await axios.delete(
+          "https://6648ad064032b1331bec1385.mockapi.io/cart/" + item.id
+        );
+        await delay();
+      }
+    } catch (error) {
+      alert("Ошибка");
     }
   };
 
   return (
-    <div className="overlay">
-      <div className="drawer">
+    <div className={`${styles.overlay} ${opened ? styles.overlayVisible : ""}`}>
+      <div className={styles.drawer}>
         <h2 className="d-flex justify-between align-center mb-30">
           Корзина
           <img
@@ -39,7 +46,7 @@ function Drawer({ onClose, items = [], onRemove }) {
           />
         </h2>
         {items.length > 0 ? (
-          <div className="d-flex flex-column flex">
+          <div className="d-flex flex-column">
             <div className="items">
               {items.map((obj, i) => (
                 <div
@@ -72,12 +79,12 @@ function Drawer({ onClose, items = [], onRemove }) {
                 <li>
                   <span>Итого: </span>
                   <div></div>
-                  <b>21 498 руб. </b>
+                  <b>{totalPrice} руб. </b>
                 </li>
                 <li>
                   <span>Налог 5%: </span>
                   <div></div>
-                  <b>1074 руб.</b>
+                  <b>{(totalPrice / 100) * 5} руб.</b>
                 </li>
               </ul>
 
@@ -87,7 +94,7 @@ function Drawer({ onClose, items = [], onRemove }) {
             </div>
           </div>
         ) : (
-          <div className="drawer">
+          <div className="">
             <Inform
               title={isOr ? "Заказ оформлен!" : "Корзина пустая"}
               image={isOr ? "/img/complite-order.png" : "/img/empty-cart.png"}
